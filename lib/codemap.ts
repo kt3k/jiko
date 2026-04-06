@@ -171,3 +171,17 @@ export const INJURY_MAP: Record<string, string> = {
   "4": "損傷なし",
   "0": "対象外",
 };
+
+/**
+ * 緯度経度の生データ（度分秒形式）を10進数の度に変換する。
+ * 元データ形式: 先頭2-3桁=度, 次2桁=分, 残り=秒(小数点以下含む、末尾3桁が小数部)
+ * 例: "430607590" → 43度06分07.590秒 → 43.10211...
+ */
+export function convertCoordinate(raw: string): number {
+  const n = raw.length;
+  const deg = parseInt(raw.slice(0, n - 7));
+  const min = parseInt(raw.slice(n - 7, n - 5));
+  const secStr = raw.slice(n - 5, n - 3) + "." + raw.slice(n - 3);
+  const sec = parseFloat(secStr);
+  return deg + min / 60 + sec / 3600;
+}
