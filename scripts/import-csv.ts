@@ -112,6 +112,20 @@ export function parseRow(cols: string[]) {
   ];
 }
 
+const INSERT_SQL = `INSERT INTO accidents (
+  prefecture, prefecture_code, police_station, severity,
+  fatalities, injuries, municipality_code,
+  year, month, day, hour, minute,
+  day_night, weather, terrain, road_surface,
+  road_shape, traffic_signal, accident_type,
+  party_a_age, party_b_age, party_a_type, party_b_type,
+  party_a_injury, party_b_injury,
+  latitude, longitude, day_of_week, is_holiday
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+const BATCH_SIZE = 1000;
+const CSV_PATH = Deno.env.get("CSV_PATH") ?? "./honhyo_2024.csv";
+
 if (import.meta.main) {
   const db = new DatabaseSync(DB_PATH);
   db.exec(CREATE_TABLE);
@@ -119,6 +133,31 @@ if (import.meta.main) {
     db.exec(sql);
   }
   console.log("Table and indexes created.");
+
+  const text = Deno.readTextFileSync(CSV_PATH);
+  const lines = text.split("\n");
+  const stmt = db.prepare(INSERT_SQL);
+  let count = 0;
+
+  db.exec("BEGIN TRANSACTION");
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const cols = line.split(",");
+    // 資料区分=1 (本票) のみインポート
+    if (cols[0] !== "1") continue;
+    const values = parseRow(cols);
+    stmt.run(...values);
+    count++;
+    if (count % BATCH_SIZE === 0) {
+      db.exec("COMMIT");
+      db.exec("BEGIN TRANSACTION");
+      console.log(`${count} rows inserted...`);
+    }
+  }
+  db.exec("COMMIT");
+
+  console.log(`Done. Total ${count} rows inserted.`);
   db.close();
 }
 
