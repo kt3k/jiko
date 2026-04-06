@@ -126,16 +126,17 @@ const INSERT_SQL = `INSERT INTO accidents (
 const BATCH_SIZE = 1000;
 const CSV_PATH = Deno.env.get("CSV_PATH") ?? "./honhyo_2024.csv";
 
-if (import.meta.main) {
-  const db = new DatabaseSync(DB_PATH);
+/** DB を初期化してテーブル・インデックスを作成する */
+export function initDb(db: DatabaseSync) {
   db.exec(CREATE_TABLE);
   for (const sql of CREATE_INDEXES) {
     db.exec(sql);
   }
-  console.log("Table and indexes created.");
+}
 
-  const text = Deno.readTextFileSync(CSV_PATH);
-  const lines = text.split("\n");
+/** CSV テキストを読み込んで DB にインポートする。挿入行数を返す。 */
+export function importCsv(db: DatabaseSync, csvText: string): number {
+  const lines = csvText.split("\n");
   const stmt = db.prepare(INSERT_SQL);
   let count = 0;
 
@@ -156,9 +157,19 @@ if (import.meta.main) {
     }
   }
   db.exec("COMMIT");
+  return count;
+}
+
+if (import.meta.main) {
+  const db = new DatabaseSync(DB_PATH);
+  initDb(db);
+  console.log("Table and indexes created.");
+
+  const csvText = Deno.readTextFileSync(CSV_PATH);
+  const count = importCsv(db, csvText);
 
   console.log(`Done. Total ${count} rows inserted.`);
   db.close();
 }
 
-export { CREATE_INDEXES, CREATE_TABLE, DB_PATH };
+export { CREATE_INDEXES, CREATE_TABLE, DB_PATH, INSERT_SQL };
