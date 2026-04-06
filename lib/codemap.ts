@@ -52,3 +52,55 @@ export const PREFECTURE_MAP: Record<string, string> = {
   "96": "鹿児島",
   "97": "沖縄",
 };
+
+/** 事故内容コード → ラベル */
+export const SEVERITY_MAP: Record<string, string> = {
+  "1": "死亡",
+  "2": "負傷",
+};
+
+/** 天候コード → ラベル */
+export const WEATHER_MAP: Record<string, string> = {
+  "1": "晴",
+  "2": "曇",
+  "3": "雨",
+  "4": "霧",
+  "5": "雪",
+};
+
+/** 地形コード → ラベル */
+export const TERRAIN_MAP: Record<string, string> = {
+  "1": "市街地-人口集中",
+  "2": "市街地-その他",
+  "3": "非市街地",
+};
+
+/** 路面状態コード → ラベル */
+export const ROAD_SURFACE_MAP: Record<string, string> = {
+  "1": "舗装-乾燥",
+  "2": "舗装-湿潤",
+  "3": "舗装-凍結",
+  "4": "舗装-積雪",
+  "5": "非舗装",
+};
+
+/** 昼夜コード → ラベル */
+export const DAY_NIGHT_MAP: Record<string, string> = {
+  "11": "昼-明",
+  "12": "昼-昼",
+  "13": "昼-暮",
+  "21": "夜-暮",
+  "22": "夜-夜",
+  "23": "夜-明",
+};
+
+/** 曜日コード → ラベル */
+export const DAY_OF_WEEK_MAP: Record<string, string> = {
+  "1": "日",
+  "2": "月",
+  "3": "火",
+  "4": "水",
+  "5": "木",
+  "6": "金",
+  "7": "土",
+};
