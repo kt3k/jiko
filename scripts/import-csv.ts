@@ -112,14 +112,64 @@ export function parseRow(cols: string[]) {
   ];
 }
 
-if (import.meta.main) {
-  const db = new DatabaseSync(DB_PATH);
+const INSERT_SQL = `INSERT INTO accidents (
+  prefecture, prefecture_code, police_station, severity,
+  fatalities, injuries, municipality_code,
+  year, month, day, hour, minute,
+  day_night, weather, terrain, road_surface,
+  road_shape, traffic_signal, accident_type,
+  party_a_age, party_b_age, party_a_type, party_b_type,
+  party_a_injury, party_b_injury,
+  latitude, longitude, day_of_week, is_holiday
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+const BATCH_SIZE = 1000;
+const CSV_PATH = Deno.env.get("CSV_PATH") ?? "./honhyo_2024.csv";
+
+/** DB を初期化してテーブル・インデックスを作成する */
+export function initDb(db: DatabaseSync) {
   db.exec(CREATE_TABLE);
   for (const sql of CREATE_INDEXES) {
     db.exec(sql);
   }
+}
+
+/** CSV テキストを読み込んで DB にインポートする。挿入行数を返す。 */
+export function importCsv(db: DatabaseSync, csvText: string): number {
+  const lines = csvText.split("\n");
+  const stmt = db.prepare(INSERT_SQL);
+  let count = 0;
+
+  db.exec("BEGIN TRANSACTION");
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const cols = line.split(",");
+    // 資料区分=1 (本票) のみインポート
+    if (cols[0] !== "1") continue;
+    const values = parseRow(cols);
+    stmt.run(...values);
+    count++;
+    if (count % BATCH_SIZE === 0) {
+      db.exec("COMMIT");
+      db.exec("BEGIN TRANSACTION");
+      console.log(`${count} rows inserted...`);
+    }
+  }
+  db.exec("COMMIT");
+  return count;
+}
+
+if (import.meta.main) {
+  const db = new DatabaseSync(DB_PATH);
+  initDb(db);
   console.log("Table and indexes created.");
+
+  const csvText = Deno.readTextFileSync(CSV_PATH);
+  const count = importCsv(db, csvText);
+
+  console.log(`Done. Total ${count} rows inserted.`);
   db.close();
 }
 
-export { CREATE_INDEXES, CREATE_TABLE, DB_PATH };
+export { CREATE_INDEXES, CREATE_TABLE, DB_PATH, INSERT_SQL };
