@@ -134,3 +134,51 @@ export function handleToolCall(
     content: JSON.stringify({ error: `Unknown tool: ${name}` }),
   };
 }
+
+export type ChatEvent =
+  | { type: "text"; content: string }
+  | { type: "chart"; config: unknown };
+
+const client = new Anthropic();
+
+/** Claude API と tool use ループでチャットする async generator */
+export async function* chat(
+  messages: Anthropic.MessageParam[],
+): AsyncGenerator<ChatEvent> {
+  const apiMessages = [...messages];
+
+  while (true) {
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-6-20250514",
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      tools: TOOLS,
+      messages: apiMessages,
+    });
+
+    const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+    for (const block of response.content) {
+      if (block.type === "text") {
+        yield { type: "text", content: block.text };
+      } else if (block.type === "tool_use") {
+        const result = handleToolCall(block.name, block.input);
+        if (result.type === "chart") {
+          yield { type: "chart", config: JSON.parse(result.content) };
+        }
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: block.id,
+          content: result.content,
+        });
+      }
+    }
+
+    if (response.stop_reason === "end_turn" || toolResults.length === 0) {
+      break;
+    }
+
+    apiMessages.push({ role: "assistant", content: response.content });
+    apiMessages.push({ role: "user", content: toolResults });
+  }
+}

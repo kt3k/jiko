@@ -24,7 +24,7 @@
 - [x] 3.3 Claude tool 定義
 - [x] 3.4 システムプロンプト定義
 - [x] 3.5 Tool 実行ハンドラ
-- [ ] 3.6 Tool use ループ
+- [x] 3.6 Tool use ループ
 - [ ] 3.7 API ルート
 
 ## Phase 4: フロントエンド
