@@ -1,5 +1,5 @@
 import { useRef, useState } from "preact/hooks";
-import { JsonParseStream } from "@std/json/json-parse-stream";
+import { JsonParseStream } from "@std/json";
 import { TextLineStream } from "@std/streams/text-line-stream";
 import Chart from "./Chart.tsx";
 
@@ -74,7 +74,7 @@ export default function Chat() {
       const charts: ChartConfig[] = [];
 
       for await (const event of eventStream) {
-        const e = event as {
+        const e = event as unknown as {
           type: string;
           content?: string;
           config?: ChartConfig;
