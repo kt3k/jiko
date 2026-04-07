@@ -50,10 +50,7 @@ export default function Chat() {
     setTimeout(scrollToBottom, 0);
 
     try {
-      const apiMessages = newMessages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      const apiMessages = newMessages.map(({ charts: _, ...rest }) => rest);
 
       const res = await fetch("/api/chat", {
         method: "POST",

@@ -2,8 +2,8 @@ import type { FreshContext } from "fresh";
 import { chat } from "../../lib/claude.ts";
 
 export const handler = {
-  async POST(_ctx: FreshContext) {
-    const { messages } = await _ctx.req.json();
+  async POST(ctx: FreshContext) {
+    const { messages } = await ctx.req.json();
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "messages is required" }), {
