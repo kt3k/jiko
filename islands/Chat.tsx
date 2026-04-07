@@ -1,4 +1,6 @@
 import { useRef, useState } from "preact/hooks";
+import { JsonParseStream } from "@std/json/json-parse-stream";
+import { TextLineStream } from "@std/streams/text-line-stream";
 import Chart from "./Chart.tsx";
 
 export interface ChartConfig {
@@ -63,52 +65,31 @@ export default function Chat() {
         throw new Error("API error");
       }
 
-      const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+      const eventStream = res.body
+        .pipeThrough(new TextDecoderStream())
+        .pipeThrough(new TextLineStream())
+        .pipeThrough(new JsonParseStream());
+
       let assistantContent = "";
       const charts: ChartConfig[] = [];
-      let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += value;
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const event = JSON.parse(line);
-            if (event.type === "text") {
-              assistantContent += event.content;
-              setMessages([...newMessages, {
-                role: "assistant",
-                content: assistantContent,
-                charts: [...charts],
-              }]);
-              setTimeout(scrollToBottom, 0);
-            } else if (event.type === "chart") {
-              charts.push(event.config);
-              setMessages([...newMessages, {
-                role: "assistant",
-                content: assistantContent,
-                charts: [...charts],
-              }]);
-              setTimeout(scrollToBottom, 0);
-            }
-          } catch {
-            // skip malformed lines
-          }
+      for await (const event of eventStream) {
+        const e = event as {
+          type: string;
+          content?: string;
+          config?: ChartConfig;
+        };
+        if (e.type === "text") {
+          assistantContent += e.content;
+        } else if (e.type === "chart") {
+          charts.push(e.config!);
         }
-      }
-
-      if (assistantContent || charts.length > 0) {
         setMessages([...newMessages, {
           role: "assistant",
           content: assistantContent,
-          charts,
+          charts: [...charts],
         }]);
+        setTimeout(scrollToBottom, 0);
       }
     } catch {
       setMessages([...newMessages, {
