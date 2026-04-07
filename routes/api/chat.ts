@@ -12,23 +12,22 @@ export const handler: Handlers = {
       });
     }
 
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
+    const stream = new ReadableStream<string>({
       async start(controller) {
         try {
           for await (const event of chat(messages)) {
-            controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+            controller.enqueue(JSON.stringify(event) + "\n");
           }
         } catch (e) {
           const error = { type: "error", content: (e as Error).message };
-          controller.enqueue(encoder.encode(JSON.stringify(error) + "\n"));
+          controller.enqueue(JSON.stringify(error) + "\n");
         } finally {
           controller.close();
         }
       },
     });
 
-    return new Response(stream, {
+    return new Response(stream.pipeThrough(new TextEncoderStream()), {
       headers: {
         "Content-Type": "application/x-ndjson",
         "Cache-Control": "no-cache",
