@@ -17,17 +17,11 @@ export const handler: Handlers = {
       async start(controller) {
         try {
           for await (const event of chat(messages)) {
-            const data = JSON.stringify(event);
-            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+            controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
           }
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         } catch (e) {
-          const error = JSON.stringify({
-            type: "error",
-            content: (e as Error).message,
-          });
-          controller.enqueue(encoder.encode(`data: ${error}\n\n`));
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          const error = { type: "error", content: (e as Error).message };
+          controller.enqueue(encoder.encode(JSON.stringify(error) + "\n"));
         } finally {
           controller.close();
         }
@@ -36,9 +30,8 @@ export const handler: Handlers = {
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/event-stream",
+        "Content-Type": "application/x-ndjson",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
       },
     });
   },
