@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { executeQuery } from "./db.ts";
 
 export const SYSTEM_PROMPT = `あなたは交通事故データの分析アシスタントです。
 2024年の警察庁交通事故オープンデータ（約29万件）をもとに、
@@ -95,3 +96,41 @@ export const TOOLS: Anthropic.Tool[] = [
     },
   },
 ];
+
+interface QueryInput {
+  sql: string;
+  explanation: string;
+}
+
+interface ChartInput {
+  chart_type: string;
+  title: string;
+  labels: string[];
+  datasets: unknown[];
+}
+
+/** Tool 呼び出しを実行して結果を返す */
+export function handleToolCall(
+  name: string,
+  input: unknown,
+): { type: "query_result" | "chart"; content: string } {
+  if (name === "query_accidents") {
+    const { sql } = input as QueryInput;
+    try {
+      const results = executeQuery(sql);
+      return { type: "query_result", content: JSON.stringify(results) };
+    } catch (e) {
+      return {
+        type: "query_result",
+        content: JSON.stringify({ error: (e as Error).message }),
+      };
+    }
+  }
+  if (name === "generate_chart") {
+    return { type: "chart", content: JSON.stringify(input as ChartInput) };
+  }
+  return {
+    type: "query_result",
+    content: JSON.stringify({ error: `Unknown tool: ${name}` }),
+  };
+}
