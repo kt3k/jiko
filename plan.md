@@ -223,6 +223,17 @@ SPEC.md に基づく実装手順。上から順に進める。
 - 重いクエリ（全件スキャン等）の応答時間を確認
 - 必要に応じてインデックス追加・クエリのLIMIT調整
 
+### 5.3 結合自動テスト (CI)
+
+- Claude API のレスポンスを stub に置き換え、API キーなしで実行可能にする
+- `lib/claude.ts` の `chat()` 関数をテスト用に差し替え可能な設計にする
+- テストシナリオ:
+  - POST /api/chat に質問を送信 → NDJSON ストリームが返ること
+  - stub が tool_use を返す → executeQuery が実行される → 結果がストリームに含まれること
+  - stub が generate_chart を返す → chart イベントがストリームに含まれること
+  - 不正リクエスト（空 messages 等）→ 400 エラーが返ること
+- CI で `deno test -A` により自動実行
+
 ## Phase 6: デプロイ
 
 ### 6.1 Docker 化
