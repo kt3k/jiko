@@ -10,11 +10,11 @@ import {
   ROAD_SHAPE_MAP,
   ROAD_SURFACE_MAP,
   SEVERITY_MAP,
+  SIGNAL_MAP,
   TERRAIN_MAP,
   WEATHER_MAP,
 } from "../lib/codemap.ts";
-
-const DB_PATH = Deno.env.get("SQLITE_PATH") ?? "./accidents.db";
+import { DB_PATH } from "../lib/db.ts";
 
 const CREATE_TABLE = `
 CREATE TABLE IF NOT EXISTS accidents (
@@ -62,17 +62,6 @@ const CREATE_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_party_a_type ON accidents(party_a_type)",
   "CREATE INDEX IF NOT EXISTS idx_party_b_type ON accidents(party_b_type)",
 ];
-
-const SIGNAL_MAP: Record<string, string> = {
-  "1": "点灯-3灯式",
-  "8": "点灯-歩車分式",
-  "2": "点灯-押ボタン式",
-  "3": "点滅-3灯式",
-  "4": "点滅-1灯式",
-  "5": "消灯",
-  "6": "故障",
-  "7": "施設なし",
-};
 
 /** CSV の1行（カラム配列）を accidents テーブルの値配列に変換する */
 export function parseRow(cols: string[]) {
@@ -172,4 +161,4 @@ if (import.meta.main) {
   db.close();
 }
 
-export { CREATE_INDEXES, CREATE_TABLE, DB_PATH, INSERT_SQL };
+export { CREATE_INDEXES, CREATE_TABLE, INSERT_SQL };

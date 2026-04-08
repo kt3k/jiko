@@ -164,6 +164,18 @@ export const PARTY_TYPE_MAP: Record<string, string> = {
   "00": "対象外当事者",
 };
 
+/** 信号機コード → ラベル */
+export const SIGNAL_MAP: Record<string, string> = {
+  "1": "点灯-3灯式",
+  "8": "点灯-歩車分式",
+  "2": "点灯-押ボタン式",
+  "3": "点滅-3灯式",
+  "4": "点滅-1灯式",
+  "5": "消灯",
+  "6": "故障",
+  "7": "施設なし",
+};
+
 /** 人身損傷程度コード → ラベル */
 export const INJURY_MAP: Record<string, string> = {
   "1": "死亡",

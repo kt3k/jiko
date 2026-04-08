@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 
-const DB_PATH = Deno.env.get("SQLITE_PATH") ?? "./accidents.db";
+export const DB_PATH = Deno.env.get("SQLITE_PATH") ?? "./accidents.db";
 
 let db: DatabaseSync | null = null;
 
