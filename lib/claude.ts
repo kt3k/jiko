@@ -102,18 +102,11 @@ interface QueryInput {
   explanation: string;
 }
 
-interface ChartInput {
-  chart_type: string;
-  title: string;
-  labels: string[];
-  datasets: unknown[];
-}
-
 /** Tool 呼び出しを実行して結果を返す */
 export function handleToolCall(
   name: string,
   input: unknown,
-): { type: "query_result" | "chart"; content: string } {
+): { type: "query_result" | "chart"; content: string; config?: unknown } {
   if (name === "query_accidents") {
     const { sql } = input as QueryInput;
     try {
@@ -127,7 +120,11 @@ export function handleToolCall(
     }
   }
   if (name === "generate_chart") {
-    return { type: "chart", content: JSON.stringify(input as ChartInput) };
+    return {
+      type: "chart",
+      content: JSON.stringify(input),
+      config: input,
+    };
   }
   return {
     type: "query_result",
@@ -164,7 +161,7 @@ export async function* chat(
       } else if (block.type === "tool_use") {
         const result = handleToolCall(block.name, block.input);
         if (result.type === "chart") {
-          yield { type: "chart", config: JSON.parse(result.content) };
+          yield { type: "chart", config: result.config };
         }
         toolResults.push({
           type: "tool_result",
