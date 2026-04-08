@@ -6,26 +6,21 @@ export const handler = {
     const { messages } = await ctx.req.json();
 
     if (!Array.isArray(messages) || messages.length === 0) {
-      return new Response(JSON.stringify({ error: "messages is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "messages is required" }, { status: 400 });
     }
 
-    const stream = new ReadableStream<string>({
-      async start(controller) {
-        try {
-          for await (const event of chat(messages)) {
-            controller.enqueue(JSON.stringify(event) + "\n");
-          }
-        } catch (e) {
-          const error = { type: "error", content: (e as Error).message };
-          controller.enqueue(JSON.stringify(error) + "\n");
-        } finally {
-          controller.close();
+    const stream = ReadableStream.from(async function* () {
+      try {
+        for await (const event of chat(messages)) {
+          yield JSON.stringify(event) + "\n";
         }
-      },
-    });
+      } catch (e) {
+        yield JSON.stringify({
+          type: "error",
+          content: (e as Error).message,
+        }) + "\n";
+      }
+    }());
 
     return new Response(stream.pipeThrough(new TextEncoderStream()), {
       headers: {
