@@ -61,7 +61,7 @@ export default function Chart({ config }: ChartProps) {
   }, [config]);
 
   return (
-    <div class="chart-wrapper">
+    <div class="mt-3 bg-white rounded-lg p-2">
       <canvas ref={canvasRef} />
     </div>
   );

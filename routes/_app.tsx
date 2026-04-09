@@ -11,9 +11,8 @@ export default function App({ Component }: PageProps) {
           name="description"
           content="2024年の交通事故データをAIが分析するチャットボット"
         />
-        <link rel="stylesheet" href="/styles.css" />
       </head>
-      <body>
+      <body class="bg-gray-100 text-gray-800 font-sans">
         <Component />
       </body>
     </html>

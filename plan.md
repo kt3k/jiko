@@ -229,7 +229,8 @@ SPEC.md に基づく実装手順。上から順に進める。
 - `lib/claude.ts` の `chat()` 関数をテスト用に差し替え可能な設計にする
 - テストシナリオ:
   - POST /api/chat に質問を送信 → NDJSON ストリームが返ること
-  - stub が tool_use を返す → executeQuery が実行される → 結果がストリームに含まれること
+  - stub が tool_use を返す → executeQuery が実行される →
+    結果がストリームに含まれること
   - stub が generate_chart を返す → chart イベントがストリームに含まれること
   - 不正リクエスト（空 messages 等）→ 400 エラーが返ること
 - CI で `deno test -A` により自動実行
