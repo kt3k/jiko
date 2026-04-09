@@ -89,9 +89,12 @@ Deno.test({
     ]);
 
     assertEquals(callCount, 2);
-    // No charts → single text event with joined text
-    assertEquals(events.length, 1);
-    assertEquals(events[0], { type: "text", content: "件数は100件です。" });
+    // tool_log events (call + result) + final text
+    const toolLogs = events.filter((e) => e.type === "tool_log");
+    const textEvents = events.filter((e) => e.type === "text");
+    assertEquals(toolLogs.length, 2);
+    assertEquals(textEvents.length, 1);
+    assertEquals(textEvents[0], { type: "text", content: "件数は100件です。" });
 
     setCreateMessage(null);
   },
