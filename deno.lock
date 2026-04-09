@@ -45,6 +45,7 @@
     "npm:@preact/signals@^2.5.1": "2.8.1_preact@10.28.4",
     "npm:@prefresh/vite@^2.4.8": "2.4.11_preact@10.28.4_vite@7.3.1",
     "npm:@tailwindcss/vite@^4.2.2": "4.2.2_vite@7.3.1",
+    "npm:chart.js@^4.5.1": "4.5.1",
     "npm:esbuild-wasm@~0.25.11": "0.25.12",
     "npm:esbuild@0.25.7": "0.25.7",
     "npm:esbuild@~0.25.5": "0.25.12",
@@ -808,6 +809,9 @@
         "@jridgewell/sourcemap-codec"
       ]
     },
+    "@kurkle/color@0.3.4": {
+      "integrity": "sha512-M5UknZPHRu3DEDWoipU6sE8PdkZ6Z/S+v4dD+Ke8IaNlpdSQah50lz1KtcFBa2vsdOnwbbnxJwVM4wty6udA5w=="
+    },
     "@mjackson/node-fetch-server@0.7.0": {
       "integrity": "sha512-un8diyEBKU3BTVj3GzlTPA1kIjCkGdD+AMYQy31Gf9JCkfoZzwgJ79GUtHrF2BN3XPNMLpubbzPcxys+a3uZEw=="
     },
@@ -1132,6 +1136,12 @@
     },
     "caniuse-lite@1.0.30001780": {
       "integrity": "sha512-llngX0E7nQci5BPJDqoZSbuZ5Bcs9F5db7EtgfwBerX9XGtkkiO4NwfDDIRzHTTwcYC8vC7bmeUEPGrKlR/TkQ=="
+    },
+    "chart.js@4.5.1": {
+      "integrity": "sha512-GIjfiT9dbmHRiYi6Nl2yFCq7kkwdkp1W/lp2J99rX0yo9tgJGn3lKQATztIjb5tVtevcBtIdICNWqlq5+E8/Pw==",
+      "dependencies": [
+        "@kurkle/color"
+      ]
     },
     "combined-stream@1.0.8": {
       "integrity": "sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==",
@@ -2010,6 +2020,7 @@
       "npm:@anthropic-ai/sdk@0.39",
       "npm:@preact/signals@^2.5.0",
       "npm:@tailwindcss/vite@^4.2.2",
+      "npm:chart.js@^4.5.1",
       "npm:preact@^10.27.2",
       "npm:tailwindcss@^4.2.2",
       "npm:vite@^7.1.3"
