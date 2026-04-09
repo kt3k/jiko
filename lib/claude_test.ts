@@ -162,7 +162,7 @@ Deno.test({
 
     assertEquals(events.length, 2);
     assertEquals(events[0], { type: "text", content: "まず、" });
-    assertEquals(events[1], { type: "text", content: "次に、" });
+    assertEquals(events[1], { type: "text", content: "\n\n次に、" });
 
     setCreateMessage(null);
   },

@@ -166,6 +166,7 @@ export async function* chat(
 ): AsyncGenerator<ChatEvent> {
   const apiMessages = [...messages];
   const createMessage = getCreateMessage();
+  let hasYieldedText = false;
 
   while (true) {
     const response = await createMessage(apiMessages);
@@ -174,7 +175,9 @@ export async function* chat(
 
     for (const block of response.content) {
       if (block.type === "text") {
-        yield { type: "text", content: block.text };
+        const prefix = hasYieldedText ? "\n\n" : "";
+        yield { type: "text", content: prefix + block.text };
+        hasYieldedText = true;
       } else if (block.type === "tool_use") {
         const result = handleToolCall(block.name, block.input);
         if (result.type === "chart") {
