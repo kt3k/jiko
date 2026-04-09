@@ -28,6 +28,7 @@
     "dompurify": "npm:dompurify@^3.3.3",
     "fresh": "jsr:@fresh/core@^2.2.2",
     "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@^1.0.8",
+    "highlight.js": "npm:highlight.js@^11.11.1",
     "marked": "npm:marked@^18.0.0",
     "playwright": "npm:playwright@^1.59.1",
     "tailwindcss": "npm:tailwindcss@^4.2.2",

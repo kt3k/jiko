@@ -3,6 +3,7 @@ import { JsonParseStream } from "@std/json";
 import { TextLineStream } from "@std/streams/text-line-stream";
 import Chart from "./Chart.tsx";
 import Markdown from "./Markdown.tsx";
+import ToolLogDetail from "./ToolLogDetail.tsx";
 
 export interface ChartConfig {
   chart_type: "bar" | "line" | "pie" | "doughnut";
@@ -195,16 +196,11 @@ export default function Chat() {
                       ? <span class="ml-2 text-green-500">done</span>
                       : <span class="ml-2">...</span>}
                     {log.result && (
-                      <div class="hidden group-hover:block absolute left-0 top-full mt-1 z-10 w-[32rem] max-h-64 overflow-auto p-3 bg-white border border-gray-200 rounded-lg shadow-lg text-xs text-gray-600 font-mono whitespace-pre-wrap">
-                        <div class="mb-2">
-                          <span class="text-gray-400">input:</span>
-                          {JSON.stringify(log.input, null, 2)}
-                        </div>
-                        <div>
-                          <span class="text-gray-400">result:</span>
-                          {log.result}
-                        </div>
-                      </div>
+                      <ToolLogDetail
+                        name={log.name}
+                        input={log.input}
+                        result={log.result}
+                      />
                     )}
                   </div>
                 </div>
