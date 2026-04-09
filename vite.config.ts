@@ -4,4 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [fresh(), tailwindcss()],
+  ssr: {
+    external: ["@anthropic-ai/sdk"],
+  },
 });
