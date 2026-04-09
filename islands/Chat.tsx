@@ -17,6 +17,30 @@ interface ChatMessage {
   charts: ChartConfig[];
 }
 
+const CHART_PLACEHOLDER_RE = /\{\{CHART:(\d+)\}\}/;
+
+/** content を CHART プレースホルダーで分割して Markdown + Chart を交互にレンダリング */
+function AssistantContent(
+  { content, charts }: { content: string; charts: ChartConfig[] },
+) {
+  const parts = content.split(/(\{\{CHART:\d+\}\})/);
+  return (
+    <>
+      {parts.map((part, i) => {
+        const match = part.match(CHART_PLACEHOLDER_RE);
+        if (match) {
+          const idx = parseInt(match[1]);
+          const chart = charts[idx];
+          if (chart) return <Chart key={`chart-${idx}`} config={chart} />;
+          return null;
+        }
+        if (!part.trim()) return null;
+        return <Markdown key={`md-${i}`} content={part} />;
+      })}
+    </>
+  );
+}
+
 const SUGGESTIONS = [
   "雨の日に多い事故の種類は？",
   "高齢者（65歳以上）の事故の特徴を教えて",
@@ -80,7 +104,9 @@ export default function Chat() {
         if (e.type === "text") {
           assistantContent += e.content;
         } else if (e.type === "chart") {
+          const idx = charts.length;
           charts.push(e.config!);
+          assistantContent += `\n\n{{CHART:${idx}}}\n\n`;
         } else if (e.type === "error") {
           assistantContent += e.content ?? "エラーが発生しました。";
         }
@@ -144,9 +170,13 @@ export default function Chat() {
               }`}
             >
               {msg.role === "assistant"
-                ? <Markdown content={msg.content} />
+                ? (
+                  <AssistantContent
+                    content={msg.content}
+                    charts={msg.charts}
+                  />
+                )
                 : msg.content}
-              {msg.charts.map((chart, j) => <Chart key={j} config={chart} />)}
             </div>
           </div>
         ))}
