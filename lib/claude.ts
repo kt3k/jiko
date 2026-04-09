@@ -212,17 +212,19 @@ export async function* chat(
   const createMessage = getCreateMessage();
 
   // Phase 1: tool use ループでテキストとチャートを収集
-  const textParts: string[] = [];
+  // 中間ラウンドの思考テキストは除外し、最終ラウンドのテキストのみ使う
+  let currentRoundTexts: string[] = [];
   const charts: ChartInfo[] = [];
 
   while (true) {
     const response = await createMessage(apiMessages);
 
     const toolResults: Anthropic.ToolResultBlockParam[] = [];
+    currentRoundTexts = [];
 
     for (const block of response.content) {
       if (block.type === "text") {
-        textParts.push(block.text);
+        currentRoundTexts.push(block.text);
       } else if (block.type === "tool_use") {
         const result = handleToolCall(block.name, block.input);
         if (result.type === "chart") {
@@ -250,7 +252,7 @@ export async function* chat(
   }
 
   // Phase 2: チャートがあればプレースメント LLM で最適配置
-  const rawText = textParts.join("\n\n");
+  const rawText = currentRoundTexts.join("\n\n");
 
   if (charts.length > 0) {
     // まず仮テキストを yield してユーザーに表示
