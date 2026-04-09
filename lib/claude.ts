@@ -134,7 +134,8 @@ export function handleToolCall(
 
 export type ChatEvent =
   | { type: "text"; content: string }
-  | { type: "chart"; config: unknown };
+  | { type: "chart"; config: unknown }
+  | { type: "tool_log"; name: string; input: unknown; result: string };
 
 export type CreateMessageFn = (
   messages: Anthropic.MessageParam[],
@@ -226,7 +227,19 @@ export async function* chat(
       if (block.type === "text") {
         currentRoundTexts.push(block.text);
       } else if (block.type === "tool_use") {
+        yield {
+          type: "tool_log" as const,
+          name: block.name,
+          input: block.input,
+          result: "",
+        };
         const result = handleToolCall(block.name, block.input);
+        yield {
+          type: "tool_log" as const,
+          name: block.name,
+          input: block.input,
+          result: result.content.slice(0, 500),
+        };
         if (result.type === "chart") {
           charts.push({
             index: charts.length,

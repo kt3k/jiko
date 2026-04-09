@@ -11,10 +11,17 @@ export interface ChartConfig {
   datasets: { label?: string; data: number[]; backgroundColor?: string[] }[];
 }
 
+interface ToolLog {
+  name: string;
+  input: unknown;
+  result: string;
+}
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   charts: ChartConfig[];
+  toolLogs: ToolLog[];
 }
 
 const CHART_SPLIT_RE = /(\{\{CHART:\d+\}\})/;
@@ -68,6 +75,7 @@ export default function Chat() {
       role: "user",
       content: text.trim(),
       charts: [],
+      toolLogs: [],
     };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
@@ -76,7 +84,9 @@ export default function Chat() {
     setTimeout(scrollToBottom, 0);
 
     try {
-      const apiMessages = newMessages.map(({ charts: _, ...rest }) => rest);
+      const apiMessages = newMessages.map((
+        { charts: _, toolLogs: _2, ...rest },
+      ) => rest);
 
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -95,17 +105,34 @@ export default function Chat() {
 
       let assistantContent = "";
       const charts: ChartConfig[] = [];
+      const toolLogs: ToolLog[] = [];
 
       for await (const event of eventStream) {
         const e = event as unknown as {
           type: string;
           content?: string;
           config?: ChartConfig;
+          name?: string;
+          input?: unknown;
+          result?: string;
         };
         if (e.type === "text") {
           assistantContent = e.content;
         } else if (e.type === "chart") {
           charts.push(e.config!);
+        } else if (e.type === "tool_log") {
+          const existing = toolLogs.find((l) =>
+            l.name === e.name && l.result === ""
+          );
+          if (existing && e.result) {
+            existing.result = e.result;
+          } else if (!e.result) {
+            toolLogs.push({
+              name: e.name!,
+              input: e.input,
+              result: "",
+            });
+          }
         } else if (e.type === "error") {
           assistantContent += e.content ?? "エラーが発生しました。";
         }
@@ -113,6 +140,7 @@ export default function Chat() {
           role: "assistant",
           content: assistantContent,
           charts: [...charts],
+          toolLogs: [...toolLogs],
         }]);
         setTimeout(scrollToBottom, 0);
       }
@@ -121,6 +149,7 @@ export default function Chat() {
         role: "assistant",
         content: "エラーが発生しました。もう一度お試しください。",
         charts: [],
+        toolLogs: [],
       }]);
     } finally {
       setLoading(false);
@@ -155,27 +184,50 @@ export default function Chat() {
         )}
 
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            class={`mb-3 flex ${
-              msg.role === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
+          <div key={i}>
+            {msg.role === "assistant" && msg.toolLogs.length > 0 && (
+              <div class="mb-2 space-y-1">
+                {msg.toolLogs.map((log, j) => (
+                  <div
+                    key={j}
+                    class="text-xs text-gray-400 font-mono px-3 py-1.5 bg-gray-50 rounded border border-gray-100"
+                  >
+                    <span class="text-gray-500">🔧 {log.name}</span>
+                    {log.name === "query_accidents" && (
+                      <span class="ml-2 text-gray-400">
+                        {(log.input as { sql?: string })?.sql?.slice(0, 80)}
+                        {((log.input as { sql?: string })?.sql?.length ?? 0) >
+                            80
+                          ? "..."
+                          : ""}
+                      </span>
+                    )}
+                    {log.result && <span class="ml-2 text-green-500">✓</span>}
+                  </div>
+                ))}
+              </div>
+            )}
             <div
-              class={`max-w-[80%] px-4 py-3 leading-relaxed break-words ${
-                msg.role === "user"
-                  ? "bg-blue-600 text-white rounded-2xl rounded-br-sm whitespace-pre-wrap"
-                  : "bg-white border border-gray-200 rounded-2xl rounded-bl-sm"
+              class={`mb-3 flex ${
+                msg.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
-              {msg.role === "assistant"
-                ? (
-                  <AssistantContent
-                    content={msg.content}
-                    charts={msg.charts}
-                  />
-                )
-                : msg.content}
+              <div
+                class={`max-w-[80%] px-4 py-3 leading-relaxed break-words ${
+                  msg.role === "user"
+                    ? "bg-blue-600 text-white rounded-2xl rounded-br-sm whitespace-pre-wrap"
+                    : "bg-white border border-gray-200 rounded-2xl rounded-bl-sm"
+                }`}
+              >
+                {msg.role === "assistant"
+                  ? (
+                    <AssistantContent
+                      content={msg.content}
+                      charts={msg.charts}
+                    />
+                  )
+                  : msg.content}
+              </div>
             </div>
           </div>
         ))}
