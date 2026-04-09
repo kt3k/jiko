@@ -29,7 +29,7 @@ function makeMessage(
     type: "message",
     role: "assistant",
     content,
-    model: "claude-sonnet-4-6-20250514",
+    model: "claude-sonnet-4-6",
     stop_reason,
     stop_sequence: null,
     usage: {
@@ -89,6 +89,7 @@ Deno.test({
     ]);
 
     assertEquals(callCount, 2);
+    // No charts → single text event with joined text
     assertEquals(events.length, 1);
     assertEquals(events[0], { type: "text", content: "件数は100件です。" });
 
@@ -97,11 +98,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "chat - generate_chart yields chart event",
+  name: "chat - generate_chart triggers placement pipeline",
   async fn() {
     let callCount = 0;
-    setCreateMessage(() => {
+    setCreateMessage((msgs) => {
       callCount++;
+      // Call 1: tool use loop - returns chart tool
       if (callCount === 1) {
         return Promise.resolve(makeMessage(
           [{
@@ -118,36 +120,52 @@ Deno.test({
           "tool_use",
         ));
       }
-      return Promise.resolve(makeMessage([
-        { type: "text", text: "グラフを生成しました。" },
-      ]));
+      // Call 2: tool use loop continues - returns final text
+      if (callCount === 2) {
+        return Promise.resolve(makeMessage([
+          { type: "text", text: "グラフを生成しました。" },
+        ]));
+      }
+      // Call 3: placement LLM - insert placeholder
+      const content = (msgs[0] as { role: string; content: string }).content;
+      if (content.includes("チャート一覧")) {
+        return Promise.resolve(makeMessage([{
+          type: "text",
+          text: "{{CHART:0}}\n\nグラフを生成しました。",
+        }]));
+      }
+      return Promise.resolve(makeMessage([{ type: "text", text: "" }]));
     });
 
     const events = await collectEvents([
       { role: "user", content: "グラフ見せて" },
     ]);
 
-    assertEquals(events.length, 2);
-    assertEquals(events[0].type, "chart");
-    if (events[0].type === "chart") {
-      const config = events[0].config as {
+    // Events: interim text, chart, final placed text
+    const chartEvents = events.filter((e) => e.type === "chart");
+    const textEvents = events.filter((e) => e.type === "text");
+    assertEquals(chartEvents.length, 1);
+    if (chartEvents[0].type === "chart") {
+      const config = chartEvents[0].config as {
         chart_type: string;
         title: string;
       };
       assertEquals(config.chart_type, "bar");
       assertEquals(config.title, "テストグラフ");
     }
-    assertEquals(events[1], {
-      type: "text",
-      content: "グラフを生成しました。",
-    });
+    // Last text event should contain the placeholder
+    const lastText = textEvents[textEvents.length - 1];
+    assertEquals(lastText.type, "text");
+    if (lastText.type === "text") {
+      assertEquals(lastText.content.includes("{{CHART:0}}"), true);
+    }
 
     setCreateMessage(null);
   },
 });
 
 Deno.test({
-  name: "chat - multiple text blocks in single response",
+  name: "chat - multiple text blocks joined with newlines",
   async fn() {
     setCreateMessage(() =>
       Promise.resolve(makeMessage([
@@ -160,9 +178,9 @@ Deno.test({
       { role: "user", content: "テスト" },
     ]);
 
-    assertEquals(events.length, 2);
-    assertEquals(events[0], { type: "text", content: "まず、" });
-    assertEquals(events[1], { type: "text", content: "\n\n次に、" });
+    // No charts → joined as single text
+    assertEquals(events.length, 1);
+    assertEquals(events[0], { type: "text", content: "まず、\n\n次に、" });
 
     setCreateMessage(null);
   },
@@ -177,12 +195,15 @@ Deno.test("handleToolCall - unknown tool returns error", () => {
   );
 });
 
-Deno.test("handleToolCall - query_accidents with invalid SQL returns error", () => {
-  const result = handleToolCall("query_accidents", {
-    sql: "DROP TABLE accidents",
-    explanation: "test",
-  });
-  assertEquals(result.type, "query_result");
-  const parsed = JSON.parse(result.content);
-  assertEquals(typeof parsed.error, "string");
-});
+Deno.test(
+  "handleToolCall - query_accidents with invalid SQL returns error",
+  () => {
+    const result = handleToolCall("query_accidents", {
+      sql: "DROP TABLE accidents",
+      explanation: "test",
+    });
+    assertEquals(result.type, "query_result");
+    const parsed = JSON.parse(result.content);
+    assertEquals(typeof parsed.error, "string");
+  },
+);

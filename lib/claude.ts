@@ -160,13 +160,60 @@ function getCreateMessage(): CreateMessageFn {
     });
 }
 
+const CHART_PLACEMENT_PROMPT = `あなたはドキュメントエディタです。
+以下のテキストとチャート一覧が与えられます。
+各チャートを、テキスト中の最も関連性の高い位置に挿入してください。
+
+ルール:
+- チャートは {{CHART:N}} というプレースホルダーで挿入する（N はチャートの番号、0始まり）
+- プレースホルダーは必ず独立した行に置く（前後に空行を入れる）
+- テキストの内容は一切変更しない。プレースホルダーの挿入のみ行う
+- すべてのチャートを必ず1回ずつ使う
+- テキストのみを出力する。説明や前置きは不要`;
+
+interface ChartInfo {
+  index: number;
+  config: unknown;
+  title: string;
+}
+
+/** テキストにチャートプレースホルダーを最適配置する */
+async function placeCharts(
+  text: string,
+  charts: ChartInfo[],
+  createMessage: CreateMessageFn,
+): Promise<string> {
+  if (charts.length === 0) return text;
+
+  const chartList = charts
+    .map((c) => `- {{CHART:${c.index}}}: ${c.title}`)
+    .join("\n");
+
+  const response = await createMessage([{
+    role: "user",
+    content:
+      `## テキスト\n\n${text}\n\n## チャート一覧\n\n${chartList}\n\n上のテキストにチャートプレースホルダーを挿入した結果を出力してください。`,
+  }]);
+
+  for (const block of response.content) {
+    if (block.type === "text") {
+      return block.text;
+    }
+  }
+  // fallback: チャートを末尾に追加
+  return text + "\n\n" + charts.map((c) => `{{CHART:${c.index}}}`).join("\n\n");
+}
+
 /** Claude API と tool use ループでチャットする async generator */
 export async function* chat(
   messages: Anthropic.MessageParam[],
 ): AsyncGenerator<ChatEvent> {
   const apiMessages = [...messages];
   const createMessage = getCreateMessage();
-  let hasYieldedText = false;
+
+  // Phase 1: tool use ループでテキストとチャートを収集
+  const textParts: string[] = [];
+  const charts: ChartInfo[] = [];
 
   while (true) {
     const response = await createMessage(apiMessages);
@@ -175,13 +222,16 @@ export async function* chat(
 
     for (const block of response.content) {
       if (block.type === "text") {
-        const prefix = hasYieldedText ? "\n\n" : "";
-        yield { type: "text", content: prefix + block.text };
-        hasYieldedText = true;
+        textParts.push(block.text);
       } else if (block.type === "tool_use") {
         const result = handleToolCall(block.name, block.input);
         if (result.type === "chart") {
-          yield { type: "chart", config: result.config };
+          charts.push({
+            index: charts.length,
+            config: result.config,
+            // deno-lint-ignore no-explicit-any
+            title: (result.config as any)?.title ?? `Chart ${charts.length}`,
+          });
         }
         toolResults.push({
           type: "tool_result",
@@ -197,5 +247,35 @@ export async function* chat(
 
     apiMessages.push({ role: "assistant", content: response.content });
     apiMessages.push({ role: "user", content: toolResults });
+  }
+
+  // Phase 2: チャートがあればプレースメント LLM で最適配置
+  const rawText = textParts.join("\n\n");
+
+  if (charts.length > 0) {
+    // まず仮テキストを yield してユーザーに表示
+    yield { type: "text", content: rawText + "\n\nグラフを配置中..." };
+
+    const placedText = await placeCharts(rawText, charts, (msgs) => {
+      // プレースメント用は system prompt を差し替え、tools なし
+      if (createMessageOverride) return createMessageOverride(msgs);
+      const client = new Anthropic();
+      return client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 8192,
+        system: CHART_PLACEMENT_PROMPT,
+        messages: msgs,
+      });
+    });
+
+    // チャート config を yield
+    for (const chart of charts) {
+      yield { type: "chart", config: chart.config };
+    }
+
+    // 配置済みテキストで上書き
+    yield { type: "text", content: placedText };
+  } else {
+    yield { type: "text", content: rawText };
   }
 }

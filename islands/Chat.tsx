@@ -103,11 +103,9 @@ export default function Chat() {
           config?: ChartConfig;
         };
         if (e.type === "text") {
-          assistantContent += e.content;
+          assistantContent = e.content;
         } else if (e.type === "chart") {
-          const idx = charts.length;
           charts.push(e.config!);
-          assistantContent += `\n\n{{CHART:${idx}}}\n\n`;
         } else if (e.type === "error") {
           assistantContent += e.content ?? "エラーが発生しました。";
         }
