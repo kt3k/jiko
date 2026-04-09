@@ -166,6 +166,20 @@ export default function Chat() {
         class="flex gap-2 px-4 py-3 border-t border-gray-200 bg-white"
         onSubmit={handleSubmit}
       >
+        {messages.length > 0 && (
+          <button
+            type="button"
+            class="px-3 py-2.5 text-gray-500 hover:text-gray-700 text-sm shrink-0"
+            onClick={() => {
+              setMessages([]);
+              setInput("");
+            }}
+            disabled={loading}
+            title="新しい会話"
+          >
+            + 新規
+          </button>
+        )}
         <input
           type="text"
           class="flex-1 px-4 py-2.5 border border-gray-300 rounded-full text-sm outline-none focus:border-blue-600 disabled:bg-gray-100"
