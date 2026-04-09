@@ -185,22 +185,30 @@ export default function Chat() {
 
         {messages.map((msg, i) => (
           <div key={i}>
-            {msg.role === "assistant" && msg.toolLogs.length > 0 && (
-              <div class="mb-2 space-y-1">
-                {msg.toolLogs.map((log, j) => (
-                  <div
-                    key={j}
-                    class="text-xs text-gray-400 font-mono px-3 py-1.5 bg-gray-50 rounded border border-gray-100"
-                  >
+            {msg.role === "assistant" &&
+              msg.toolLogs.map((log, j) => (
+                <div key={`tl-${j}`} class="mb-2 flex justify-start">
+                  <div class="group relative max-w-[80%] px-3 py-1.5 text-xs text-gray-400 font-mono bg-gray-50 border border-gray-200 rounded-2xl rounded-bl-sm cursor-default">
                     <span class="text-gray-500">tool</span>
                     <span class="ml-2">{log.name}</span>
                     {log.result
                       ? <span class="ml-2 text-green-500">done</span>
                       : <span class="ml-2">...</span>}
+                    {log.result && (
+                      <div class="hidden group-hover:block absolute left-0 top-full mt-1 z-10 w-[32rem] max-h-64 overflow-auto p-3 bg-white border border-gray-200 rounded-lg shadow-lg text-xs text-gray-600 font-mono whitespace-pre-wrap">
+                        <div class="mb-2">
+                          <span class="text-gray-400">input:</span>
+                          {JSON.stringify(log.input, null, 2)}
+                        </div>
+                        <div>
+                          <span class="text-gray-400">result:</span>
+                          {log.result}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
             <div
               class={`mb-3 flex ${
                 msg.role === "user" ? "justify-end" : "justify-start"
