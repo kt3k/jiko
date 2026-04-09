@@ -80,6 +80,8 @@ export default function Chat() {
           assistantContent += e.content;
         } else if (e.type === "chart") {
           charts.push(e.config!);
+        } else if (e.type === "error") {
+          assistantContent += e.content ?? "エラーが発生しました。";
         }
         setMessages([...newMessages, {
           role: "assistant",
