@@ -106,17 +106,17 @@ export default function Chat() {
   };
 
   return (
-    <div class="chat-container">
-      <div class="messages">
+    <div class="flex flex-col h-full">
+      <div class="flex-1 overflow-y-auto p-4">
         {messages.length === 0 && !loading && (
-          <div class="suggestions">
-            <p class="suggestions-label">質問の例:</p>
-            <div class="suggestions-grid">
+          <div class="py-4">
+            <p class="text-sm text-gray-500 mb-3">質問の例:</p>
+            <div class="flex flex-wrap gap-2">
               {SUGGESTIONS.map((s) => (
                 <button
                   type="button"
                   key={s}
-                  class="suggestion-btn"
+                  class="px-3 py-2 bg-white border border-gray-300 rounded-full text-sm cursor-pointer text-gray-700 hover:bg-gray-50 hover:border-blue-500 hover:text-blue-600"
                   onClick={() => sendMessage(s)}
                 >
                   {s}
@@ -127,8 +127,19 @@ export default function Chat() {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} class={`message message-${msg.role}`}>
-            <div class="message-bubble">
+          <div
+            key={i}
+            class={`mb-3 flex ${
+              msg.role === "user" ? "justify-end" : "justify-start"
+            }`}
+          >
+            <div
+              class={`max-w-[80%] px-4 py-3 leading-relaxed whitespace-pre-wrap break-words ${
+                msg.role === "user"
+                  ? "bg-blue-600 text-white rounded-2xl rounded-br-sm"
+                  : "bg-white border border-gray-200 rounded-2xl rounded-bl-sm"
+              }`}
+            >
               {msg.content}
               {msg.charts.map((chart, j) => <Chart key={j} config={chart} />)}
             </div>
@@ -136,8 +147,8 @@ export default function Chat() {
         ))}
 
         {loading && (
-          <div class="message message-assistant">
-            <div class="message-bubble loading-indicator">
+          <div class="mb-3 flex justify-start">
+            <div class="max-w-[80%] px-4 py-3 bg-white border border-gray-200 rounded-2xl rounded-bl-sm text-gray-400 italic">
               分析中...
             </div>
           </div>
@@ -146,10 +157,13 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      <form class="input-area" onSubmit={handleSubmit}>
+      <form
+        class="flex gap-2 px-4 py-3 border-t border-gray-200 bg-white"
+        onSubmit={handleSubmit}
+      >
         <input
           type="text"
-          class="chat-input"
+          class="flex-1 px-4 py-2.5 border border-gray-300 rounded-full text-sm outline-none focus:border-blue-600 disabled:bg-gray-100"
           placeholder="質問を入力..."
           value={input}
           onInput={(e) => setInput((e.target as HTMLInputElement).value)}
@@ -157,7 +171,7 @@ export default function Chat() {
         />
         <button
           type="submit"
-          class="send-btn"
+          class="px-5 py-2.5 bg-blue-600 text-white rounded-full text-sm cursor-pointer hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
           disabled={loading || !input.trim()}
         >
           送信
