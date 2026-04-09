@@ -192,17 +192,11 @@ export default function Chat() {
                     key={j}
                     class="text-xs text-gray-400 font-mono px-3 py-1.5 bg-gray-50 rounded border border-gray-100"
                   >
-                    <span class="text-gray-500">🔧 {log.name}</span>
-                    {log.name === "query_accidents" && (
-                      <span class="ml-2 text-gray-400">
-                        {(log.input as { sql?: string })?.sql?.slice(0, 80)}
-                        {((log.input as { sql?: string })?.sql?.length ?? 0) >
-                            80
-                          ? "..."
-                          : ""}
-                      </span>
-                    )}
-                    {log.result && <span class="ml-2 text-green-500">✓</span>}
+                    <span class="text-gray-500">tool</span>
+                    <span class="ml-2">{log.name}</span>
+                    {log.result
+                      ? <span class="ml-2 text-green-500">done</span>
+                      : <span class="ml-2">...</span>}
                   </div>
                 ))}
               </div>
