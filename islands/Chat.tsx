@@ -17,19 +17,20 @@ interface ChatMessage {
   charts: ChartConfig[];
 }
 
+const CHART_SPLIT_RE = /(\{\{CHART:\d+\}\})/;
 const CHART_PLACEHOLDER_RE = /\{\{CHART:(\d+)\}\}/;
 
 /** content を CHART プレースホルダーで分割して Markdown + Chart を交互にレンダリング */
 function AssistantContent(
   { content, charts }: { content: string; charts: ChartConfig[] },
 ) {
-  const parts = content.split(/(\{\{CHART:\d+\}\})/);
+  const parts = content.split(CHART_SPLIT_RE);
   return (
     <>
       {parts.map((part, i) => {
         const match = part.match(CHART_PLACEHOLDER_RE);
         if (match) {
-          const idx = parseInt(match[1]);
+          const idx = parseInt(match[1], 10);
           const chart = charts[idx];
           if (chart) return <Chart key={`chart-${idx}`} config={chart} />;
           return null;
