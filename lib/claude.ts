@@ -136,22 +136,39 @@ export type ChatEvent =
   | { type: "text"; content: string }
   | { type: "chart"; config: unknown };
 
-const client = new Anthropic();
+export type CreateMessageFn = (
+  messages: Anthropic.MessageParam[],
+) => Promise<Anthropic.Message>;
+
+let createMessageOverride: CreateMessageFn | null = null;
+
+/** テスト用: Claude API の createMessage を差し替える */
+export function setCreateMessage(fn: CreateMessageFn | null) {
+  createMessageOverride = fn;
+}
+
+function getCreateMessage(): CreateMessageFn {
+  if (createMessageOverride) return createMessageOverride;
+  const client = new Anthropic();
+  return (messages) =>
+    client.messages.create({
+      model: "claude-sonnet-4-6-20250514",
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      tools: TOOLS,
+      messages,
+    });
+}
 
 /** Claude API と tool use ループでチャットする async generator */
 export async function* chat(
   messages: Anthropic.MessageParam[],
 ): AsyncGenerator<ChatEvent> {
   const apiMessages = [...messages];
+  const createMessage = getCreateMessage();
 
   while (true) {
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-6-20250514",
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      tools: TOOLS,
-      messages: apiMessages,
-    });
+    const response = await createMessage(apiMessages);
 
     const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
