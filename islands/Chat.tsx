@@ -2,6 +2,7 @@ import { useRef, useState } from "preact/hooks";
 import { JsonParseStream } from "@std/json";
 import { TextLineStream } from "@std/streams/text-line-stream";
 import Chart from "./Chart.tsx";
+import Markdown from "./Markdown.tsx";
 
 export interface ChartConfig {
   chart_type: "bar" | "line" | "pie" | "doughnut";
@@ -136,13 +137,15 @@ export default function Chat() {
             }`}
           >
             <div
-              class={`max-w-[80%] px-4 py-3 leading-relaxed whitespace-pre-wrap break-words ${
+              class={`max-w-[80%] px-4 py-3 leading-relaxed break-words ${
                 msg.role === "user"
-                  ? "bg-blue-600 text-white rounded-2xl rounded-br-sm"
+                  ? "bg-blue-600 text-white rounded-2xl rounded-br-sm whitespace-pre-wrap"
                   : "bg-white border border-gray-200 rounded-2xl rounded-bl-sm"
               }`}
             >
-              {msg.content}
+              {msg.role === "assistant"
+                ? <Markdown content={msg.content} />
+                : msg.content}
               {msg.charts.map((chart, j) => <Chart key={j} config={chart} />)}
             </div>
           </div>
