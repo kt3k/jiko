@@ -46,5 +46,5 @@
 
 ## Phase 6: デプロイ
 
-- [ ] 6.1 Docker 化
+- [x] 6.1 Docker 化
 - [ ] 6.2 Fly.io デプロイ
