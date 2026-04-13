@@ -60,7 +60,7 @@ export default function ToolLogDetail(
   { name, input, result }: ToolLogDetailProps,
 ) {
   return (
-    <div class="hidden group-hover:block absolute left-0 top-full mt-1 z-10 w-[36rem] max-h-80 overflow-auto p-3 bg-white border border-gray-200 rounded-lg shadow-lg text-xs">
+    <>
       <div class="mb-3">
         <span class="text-gray-400 font-semibold uppercase tracking-wide">
           Input
@@ -73,6 +73,6 @@ export default function ToolLogDetail(
         </span>
         {formatResult(result)}
       </div>
-    </div>
+    </>
   );
 }
