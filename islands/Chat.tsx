@@ -23,6 +23,7 @@ interface ChatMessage {
   content: string;
   charts: ChartConfig[];
   toolLogs: ToolLog[];
+  isError?: boolean;
 }
 
 const CHART_SPLIT_RE = /(\{\{CHART:\d+\}\})/;
@@ -50,6 +51,22 @@ function AssistantContent(
   );
 }
 
+/** ローディングの進捗表示 */
+function LoadingIndicator(
+  { toolLogs }: { toolLogs: ToolLog[] },
+) {
+  const pending = toolLogs.filter((l) => !l.result).length;
+  const done = toolLogs.filter((l) => l.result).length;
+
+  if (toolLogs.length === 0) {
+    return <span>考え中...</span>;
+  }
+  if (pending > 0) {
+    return <span>ツール実行中 ({done}/{toolLogs.length})...</span>;
+  }
+  return <span>回答を生成中...</span>;
+}
+
 const SUGGESTIONS = [
   "雨の日に多い事故の種類は？",
   "高齢者（65歳以上）の事故の特徴を教えて",
@@ -63,6 +80,8 @@ export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [currentToolLogs, setCurrentToolLogs] = useState<ToolLog[]>([]);
+  const [expandedLog, setExpandedLog] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -82,11 +101,12 @@ export default function Chat() {
     setMessages(newMessages);
     setInput("");
     setLoading(true);
+    setCurrentToolLogs([]);
     setTimeout(scrollToBottom, 0);
 
     try {
       const apiMessages = newMessages.map((
-        { charts: _, toolLogs: _2, ...rest },
+        { charts: _, toolLogs: _2, isError: _3, ...rest },
       ) => rest);
 
       const res = await fetch("/api/chat", {
@@ -107,6 +127,7 @@ export default function Chat() {
       let assistantContent = "";
       const charts: ChartConfig[] = [];
       const toolLogs: ToolLog[] = [];
+      let isError = false;
 
       for await (const event of eventStream) {
         const e = event as unknown as {
@@ -134,14 +155,17 @@ export default function Chat() {
               result: "",
             });
           }
+          setCurrentToolLogs([...toolLogs]);
         } else if (e.type === "error") {
           assistantContent += e.content ?? "エラーが発生しました。";
+          isError = true;
         }
         setMessages([...newMessages, {
           role: "assistant",
           content: assistantContent,
           charts: [...charts],
           toolLogs: [...toolLogs],
+          isError,
         }]);
         setTimeout(scrollToBottom, 0);
       }
@@ -151,9 +175,11 @@ export default function Chat() {
         content: "エラーが発生しました。もう一度お試しください。",
         charts: [],
         toolLogs: [],
+        isError: true,
       }]);
     } finally {
       setLoading(false);
+      setCurrentToolLogs([]);
       setTimeout(scrollToBottom, 0);
     }
   };
@@ -189,18 +215,30 @@ export default function Chat() {
             {msg.role === "assistant" &&
               msg.toolLogs.map((log, j) => (
                 <div key={`tl-${j}`} class="mb-2 flex justify-start">
-                  <div class="group relative max-w-[80%] px-3 py-1.5 text-xs text-gray-400 font-mono bg-gray-50 border border-gray-200 rounded-2xl rounded-bl-sm cursor-default">
-                    <span class="text-gray-500">tool</span>
-                    <span class="ml-2">{log.name}</span>
-                    {log.result
-                      ? <span class="ml-2 text-green-500">done</span>
-                      : <span class="ml-2">...</span>}
-                    {log.result && (
-                      <ToolLogDetail
-                        name={log.name}
-                        input={log.input}
-                        result={log.result}
-                      />
+                  <div class="relative max-w-[80%] sm:max-w-[60%]">
+                    <button
+                      type="button"
+                      class="w-full px-3 py-1.5 text-xs text-gray-400 font-mono bg-gray-50 border border-gray-200 rounded-2xl rounded-bl-sm cursor-pointer text-left"
+                      onClick={() =>
+                        setExpandedLog(expandedLog === j ? null : j)}
+                    >
+                      <span class="text-gray-500">tool</span>
+                      <span class="ml-2">{log.name}</span>
+                      {log.result
+                        ? <span class="ml-2 text-green-500">done</span>
+                        : <span class="ml-2">...</span>}
+                      <span class="ml-2 text-gray-300">
+                        {expandedLog === j ? "▲" : "▼"}
+                      </span>
+                    </button>
+                    {log.result && expandedLog === j && (
+                      <div class="mt-1 z-10 w-full sm:w-[36rem] max-h-64 overflow-auto p-3 bg-white border border-gray-200 rounded-lg shadow-lg text-xs">
+                        <ToolLogDetail
+                          name={log.name}
+                          input={log.input}
+                          result={log.result}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -214,6 +252,8 @@ export default function Chat() {
                 class={`max-w-[80%] px-4 py-3 leading-relaxed break-words ${
                   msg.role === "user"
                     ? "bg-blue-600 text-white rounded-2xl rounded-br-sm whitespace-pre-wrap"
+                    : msg.isError
+                    ? "bg-red-50 border border-red-200 text-red-700 rounded-2xl rounded-bl-sm"
                     : "bg-white border border-gray-200 rounded-2xl rounded-bl-sm"
                 }`}
               >
@@ -233,7 +273,7 @@ export default function Chat() {
         {loading && (
           <div class="mb-3 flex justify-start">
             <div class="max-w-[80%] px-4 py-3 bg-white border border-gray-200 rounded-2xl rounded-bl-sm text-gray-400 italic">
-              分析中...
+              <LoadingIndicator toolLogs={currentToolLogs} />
             </div>
           </div>
         )}
@@ -242,13 +282,13 @@ export default function Chat() {
       </div>
 
       <form
-        class="flex gap-2 px-4 py-3 border-t border-gray-200 bg-white"
+        class="flex gap-2 px-2 sm:px-4 py-3 border-t border-gray-200 bg-white"
         onSubmit={handleSubmit}
       >
         {messages.length > 0 && (
           <button
             type="button"
-            class="px-3 py-2.5 text-gray-500 hover:text-gray-700 text-sm shrink-0"
+            class="px-2 sm:px-3 py-2.5 text-gray-500 hover:text-gray-700 text-sm shrink-0"
             onClick={() => {
               setMessages([]);
               setInput("");
@@ -261,7 +301,7 @@ export default function Chat() {
         )}
         <input
           type="text"
-          class="flex-1 px-4 py-2.5 border border-gray-300 rounded-full text-sm outline-none focus:border-blue-600 disabled:bg-gray-100"
+          class="flex-1 min-w-0 px-3 sm:px-4 py-2.5 border border-gray-300 rounded-full text-sm outline-none focus:border-blue-600 disabled:bg-gray-100"
           placeholder="質問を入力..."
           value={input}
           onInput={(e) => setInput((e.target as HTMLInputElement).value)}
@@ -269,7 +309,7 @@ export default function Chat() {
         />
         <button
           type="submit"
-          class="px-5 py-2.5 bg-blue-600 text-white rounded-full text-sm cursor-pointer hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+          class="px-3 sm:px-5 py-2.5 bg-blue-600 text-white rounded-full text-sm cursor-pointer hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed shrink-0"
           disabled={loading || !input.trim()}
         >
           送信
