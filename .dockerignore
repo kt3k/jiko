@@ -3,3 +3,6 @@
 node_modules/
 _fresh/
 .git/
+*.xlsx
+hojuhyo_2024.csv
+kosokuhyo_2024.csv
