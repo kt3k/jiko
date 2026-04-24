@@ -3,6 +3,7 @@ FROM denoland/deno:latest
 WORKDIR /app
 COPY . .
 RUN deno install
+RUN deno task import-data
 RUN deno task build
 
 EXPOSE 8000

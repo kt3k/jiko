@@ -4,4 +4,5 @@ node_modules/
 _fresh/
 .git/
 *.xlsx
-*.csv
+hojuhyo_2024.csv
+kosokuhyo_2024.csv
