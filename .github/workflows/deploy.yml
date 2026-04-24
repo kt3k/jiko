@@ -1,0 +1,64 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/kt3k/jiko:sha-${{ github.sha }}
+            ghcr.io/kt3k/jiko:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Bump image tag in kt3k-cloud
+        env:
+          DEPLOY_KEY: ${{ secrets.KT3K_CLOUD_DEPLOY_KEY }}
+          SHA: ${{ github.sha }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519" \
+            git clone git@github.com:kt3k/kt3k-cloud.git
+          cd kt3k-cloud
+
+          sed -i -E "s|(image: ghcr\.io/kt3k/jiko:)sha-[0-9a-f]+|\1sha-${SHA}|" \
+            manifests/jiko/deployment.yaml
+
+          if git diff --quiet; then
+            echo "No change in manifest, skipping commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifests/jiko/deployment.yaml
+          git commit -m "chore(jiko): bump image to sha-${SHA}"
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519" git push origin main

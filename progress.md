@@ -47,4 +47,4 @@
 ## Phase 6: デプロイ
 
 - [x] 6.1 Docker 化
-- [ ] 6.2 Fly.io デプロイ
+- [ ] 6.2 ArgoCD デプロイ (vultr VKE, jiko.kt3k.org)
