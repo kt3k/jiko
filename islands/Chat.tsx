@@ -1,6 +1,7 @@
 import { useRef, useState } from "preact/hooks";
 import { JsonParseStream } from "@std/json";
 import { TextLineStream } from "@std/streams/text-line-stream";
+import { asAsyncIterable } from "../lib/stream.ts";
 import Chart from "./Chart.tsx";
 import Markdown from "./Markdown.tsx";
 import ToolLogDetail from "./ToolLogDetail.tsx";
@@ -129,7 +130,7 @@ export default function Chat() {
       const toolLogs: ToolLog[] = [];
       let isError = false;
 
-      for await (const event of eventStream) {
+      for await (const event of asAsyncIterable(eventStream)) {
         const e = event as unknown as {
           type: string;
           content?: string;
