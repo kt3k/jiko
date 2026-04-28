@@ -64,29 +64,11 @@ function LoadingDots() {
 }
 
 /** ローディングの進捗表示 */
-function LoadingIndicator(
-  { toolLogs }: { toolLogs: ToolLog[] },
-) {
-  const pending = toolLogs.filter((l) => !l.result).length;
-  const done = toolLogs.filter((l) => l.result).length;
-
-  if (toolLogs.length === 0) {
-    return (
-      <span>
-        考え中<LoadingDots />
-      </span>
-    );
-  }
-  if (pending > 0) {
-    return (
-      <span>
-        ツール実行中 ({done}/{toolLogs.length})<LoadingDots />
-      </span>
-    );
-  }
+function LoadingIndicator({ placing }: { placing: boolean }) {
   return (
     <span>
-      回答を生成中<LoadingDots />
+      {placing ? "回答を生成中" : "考え中"}
+      <LoadingDots />
     </span>
   );
 }
@@ -104,7 +86,6 @@ export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [currentToolLogs, setCurrentToolLogs] = useState<ToolLog[]>([]);
   const [expandedLog, setExpandedLog] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -125,7 +106,6 @@ export default function Chat() {
     setMessages(newMessages);
     setInput("");
     setLoading(true);
-    setCurrentToolLogs([]);
     setTimeout(scrollToBottom, 0);
 
     try {
@@ -179,7 +159,6 @@ export default function Chat() {
               result: e.result ?? "",
             });
           }
-          setCurrentToolLogs([...toolLogs]);
         } else if (e.type === "error") {
           assistantContent += e.content ?? "エラーが発生しました。";
           isError = true;
@@ -203,7 +182,6 @@ export default function Chat() {
       }]);
     } finally {
       setLoading(false);
-      setCurrentToolLogs([]);
       setTimeout(scrollToBottom, 0);
     }
   };
@@ -296,13 +274,20 @@ export default function Chat() {
           </div>
         ))}
 
-        {loading && (
-          <div class="mb-3 flex justify-start">
-            <div class="max-w-[80%] px-4 py-3 bg-white border border-gray-200 rounded-2xl rounded-bl-sm text-gray-400 italic">
-              <LoadingIndicator toolLogs={currentToolLogs} />
+        {loading && (() => {
+          const last = messages[messages.length - 1];
+          // chart は受け取ったが配置済みテキストがまだ届いていない = チャート配置中
+          const placing = last?.role === "assistant" &&
+            last.charts.length > 0 &&
+            last.content.trim() === "";
+          return (
+            <div class="mb-3 flex justify-start">
+              <div class="max-w-[80%] px-4 py-3 bg-white border border-gray-200 rounded-2xl rounded-bl-sm text-gray-400 italic">
+                <LoadingIndicator placing={placing} />
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         <div ref={messagesEndRef} />
       </div>

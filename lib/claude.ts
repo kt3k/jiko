@@ -278,7 +278,11 @@ export async function* chat(
   const rawText = currentRoundTexts.join("\n\n");
 
   if (charts.length > 0) {
-    // チャート配置が完了するまで text は yield しない (UI 側で「回答を生成中」のローダーを継続表示)
+    // チャートを先に yield して「回答を生成中（配置中）」状態をクライアントに伝える
+    for (const chart of charts) {
+      yield { type: "chart", config: chart.config };
+    }
+
     const placedText = await placeCharts(rawText, charts, (msgs) => {
       // プレースメント用は system prompt を差し替え、tools なし
       if (createMessageOverride) return createMessageOverride(msgs);
@@ -291,12 +295,7 @@ export async function* chat(
       });
     });
 
-    // チャート config を yield
-    for (const chart of charts) {
-      yield { type: "chart", config: chart.config };
-    }
-
-    // 配置済みテキストで上書き
+    // 配置済みテキストを yield
     yield { type: "text", content: placedText };
   } else {
     yield { type: "text", content: rawText };
