@@ -56,9 +56,9 @@ function AssistantContent(
 function LoadingDots() {
   return (
     <span class="inline-flex">
-      <span class="animate-bounce">.</span>
-      <span class="animate-bounce [animation-delay:0.15s]">.</span>
-      <span class="animate-bounce [animation-delay:0.3s]">.</span>
+      <span class="animate-bounce-sm">.</span>
+      <span class="animate-bounce-sm [animation-delay:0.15s]">.</span>
+      <span class="animate-bounce-sm [animation-delay:0.3s]">.</span>
     </span>
   );
 }
