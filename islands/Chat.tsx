@@ -267,30 +267,34 @@ export default function Chat() {
                   </div>
                 </div>
               ))}
-            <div
-              class={`mb-3 flex ${
-                msg.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
+            {(msg.role === "user" ||
+              msg.content.trim() !== "" ||
+              msg.charts.length > 0) && (
               <div
-                class={`max-w-[80%] px-4 py-3 leading-relaxed break-words ${
-                  msg.role === "user"
-                    ? "bg-blue-600 text-white rounded-2xl rounded-br-sm whitespace-pre-wrap"
-                    : msg.isError
-                    ? "bg-red-50 border border-red-200 text-red-700 rounded-2xl rounded-bl-sm"
-                    : "bg-white border border-gray-200 rounded-2xl rounded-bl-sm"
+                class={`mb-3 flex ${
+                  msg.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                {msg.role === "assistant"
-                  ? (
-                    <AssistantContent
-                      content={msg.content}
-                      charts={msg.charts}
-                    />
-                  )
-                  : msg.content}
+                <div
+                  class={`max-w-[80%] px-4 py-3 leading-relaxed break-words ${
+                    msg.role === "user"
+                      ? "bg-blue-600 text-white rounded-2xl rounded-br-sm whitespace-pre-wrap"
+                      : msg.isError
+                      ? "bg-red-50 border border-red-200 text-red-700 rounded-2xl rounded-bl-sm"
+                      : "bg-white border border-gray-200 rounded-2xl rounded-bl-sm"
+                  }`}
+                >
+                  {msg.role === "assistant"
+                    ? (
+                      <AssistantContent
+                        content={msg.content}
+                        charts={msg.charts}
+                      />
+                    )
+                    : msg.content}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ))}
 
