@@ -52,6 +52,16 @@ function AssistantContent(
   );
 }
 
+function LoadingDots() {
+  return (
+    <span class="inline-flex">
+      <span class="animate-bounce">.</span>
+      <span class="animate-bounce [animation-delay:0.15s]">.</span>
+      <span class="animate-bounce [animation-delay:0.3s]">.</span>
+    </span>
+  );
+}
+
 /** ローディングの進捗表示 */
 function LoadingIndicator(
   { toolLogs }: { toolLogs: ToolLog[] },
@@ -60,12 +70,16 @@ function LoadingIndicator(
   const done = toolLogs.filter((l) => l.result).length;
 
   if (toolLogs.length === 0) {
-    return <span>考え中...</span>;
+    return <span>考え中<LoadingDots /></span>;
   }
   if (pending > 0) {
-    return <span>ツール実行中 ({done}/{toolLogs.length})...</span>;
+    return (
+      <span>
+        ツール実行中 ({done}/{toolLogs.length})<LoadingDots />
+      </span>
+    );
   }
-  return <span>回答を生成中...</span>;
+  return <span>回答を生成中<LoadingDots /></span>;
 }
 
 const SUGGESTIONS = [
