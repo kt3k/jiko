@@ -278,9 +278,7 @@ export async function* chat(
   const rawText = currentRoundTexts.join("\n\n");
 
   if (charts.length > 0) {
-    // まず仮テキストを yield してユーザーに表示
-    yield { type: "text", content: rawText + "\n\nグラフを配置中..." };
-
+    // チャート配置が完了するまで text は yield しない (UI 側で「回答を生成中」のローダーを継続表示)
     const placedText = await placeCharts(rawText, charts, (msgs) => {
       // プレースメント用は system prompt を差し替え、tools なし
       if (createMessageOverride) return createMessageOverride(msgs);

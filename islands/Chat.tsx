@@ -267,9 +267,7 @@ export default function Chat() {
                   </div>
                 </div>
               ))}
-            {(msg.role === "user" ||
-              msg.content.trim() !== "" ||
-              msg.charts.length > 0) && (
+            {(msg.role === "user" || msg.content.trim() !== "") && (
               <div
                 class={`mb-3 flex ${
                   msg.role === "user" ? "justify-end" : "justify-start"
