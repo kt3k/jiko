@@ -103,14 +103,16 @@ interface QueryInput {
 }
 
 /** Tool 呼び出しを実行して結果を返す */
-export function handleToolCall(
+export async function handleToolCall(
   name: string,
   input: unknown,
-): { type: "query_result" | "chart"; content: string; config?: unknown } {
+): Promise<
+  { type: "query_result" | "chart"; content: string; config?: unknown }
+> {
   if (name === "query_accidents") {
     const { sql } = input as QueryInput;
     try {
-      const results = executeQuery(sql);
+      const results = await executeQuery(sql);
       return { type: "query_result", content: JSON.stringify(results) };
     } catch (e) {
       return {
@@ -135,7 +137,13 @@ export function handleToolCall(
 export type ChatEvent =
   | { type: "text"; content: string }
   | { type: "chart"; config: unknown }
-  | { type: "tool_log"; name: string; input: unknown; result: string };
+  | {
+    type: "tool_log";
+    id: string;
+    name: string;
+    input: unknown;
+    result: string;
+  };
 
 export type CreateMessageFn = (
   messages: Anthropic.MessageParam[],
@@ -229,13 +237,15 @@ export async function* chat(
       } else if (block.type === "tool_use") {
         yield {
           type: "tool_log" as const,
+          id: block.id,
           name: block.name,
           input: block.input,
           result: "",
         };
-        const result = handleToolCall(block.name, block.input);
+        const result = await handleToolCall(block.name, block.input);
         yield {
           type: "tool_log" as const,
+          id: block.id,
           name: block.name,
           input: block.input,
           result: result.content.slice(0, 500),

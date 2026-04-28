@@ -6,6 +6,8 @@ import {
   handleToolCall,
   setCreateMessage,
 } from "./claude.ts";
+import { mockCreateMessage } from "./claude_mock.ts";
+import { closeDb } from "./db.ts";
 
 // Helper: collect all events from chat generator
 async function collectEvents(
@@ -189,8 +191,38 @@ Deno.test({
   },
 });
 
-Deno.test("handleToolCall - unknown tool returns error", () => {
-  const result = handleToolCall("unknown_tool", {});
+Deno.test({
+  name: "chat - mockCreateMessage drives real handleToolCall pipeline",
+  async fn() {
+    setCreateMessage(mockCreateMessage);
+
+    try {
+      const events = await collectEvents([
+        { role: "user", content: "天気別の事故" },
+      ]);
+
+      const toolLogs = events.filter((e) => e.type === "tool_log");
+      const charts = events.filter((e) => e.type === "chart");
+      const texts = events.filter((e) => e.type === "text");
+
+      // 2 ツール (query_accidents + generate_chart) × (pending + done) = 4
+      assertEquals(toolLogs.length, 4);
+      assertEquals(charts.length, 1);
+      // 最後のテキストにチャートプレースホルダーが入っていること
+      const lastText = texts[texts.length - 1];
+      assertEquals(lastText.type, "text");
+      if (lastText.type === "text") {
+        assertEquals(lastText.content.includes("{{CHART:0}}"), true);
+      }
+    } finally {
+      setCreateMessage(null);
+      closeDb();
+    }
+  },
+});
+
+Deno.test("handleToolCall - unknown tool returns error", async () => {
+  const result = await handleToolCall("unknown_tool", {});
   assertEquals(result.type, "query_result");
   assertEquals(
     JSON.parse(result.content).error,
@@ -200,8 +232,8 @@ Deno.test("handleToolCall - unknown tool returns error", () => {
 
 Deno.test(
   "handleToolCall - query_accidents with invalid SQL returns error",
-  () => {
-    const result = handleToolCall("query_accidents", {
+  async () => {
+    const result = await handleToolCall("query_accidents", {
       sql: "DROP TABLE accidents",
       explanation: "test",
     });

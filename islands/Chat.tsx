@@ -14,6 +14,7 @@ export interface ChartConfig {
 }
 
 interface ToolLog {
+  id: string;
   name: string;
   input: unknown;
   result: string;
@@ -70,7 +71,11 @@ function LoadingIndicator(
   const done = toolLogs.filter((l) => l.result).length;
 
   if (toolLogs.length === 0) {
-    return <span>考え中<LoadingDots /></span>;
+    return (
+      <span>
+        考え中<LoadingDots />
+      </span>
+    );
   }
   if (pending > 0) {
     return (
@@ -79,7 +84,11 @@ function LoadingIndicator(
       </span>
     );
   }
-  return <span>回答を生成中<LoadingDots /></span>;
+  return (
+    <span>
+      回答を生成中<LoadingDots />
+    </span>
+  );
 }
 
 const SUGGESTIONS = [
@@ -149,25 +158,25 @@ export default function Chat() {
           type: string;
           content?: string;
           config?: ChartConfig;
+          id?: string;
           name?: string;
           input?: unknown;
           result?: string;
         };
         if (e.type === "text") {
-          assistantContent = e.content;
+          assistantContent = e.content ?? "N/A";
         } else if (e.type === "chart") {
           charts.push(e.config!);
         } else if (e.type === "tool_log") {
-          const existing = toolLogs.find((l) =>
-            l.name === e.name && l.result === ""
-          );
-          if (existing && e.result) {
-            existing.result = e.result;
-          } else if (!e.result) {
+          const existing = toolLogs.find((l) => l.id === e.id);
+          if (existing) {
+            existing.result = e.result ?? "";
+          } else {
             toolLogs.push({
+              id: e.id!,
               name: e.name!,
               input: e.input,
-              result: "",
+              result: e.result ?? "",
             });
           }
           setCurrentToolLogs([...toolLogs]);

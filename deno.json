@@ -2,6 +2,7 @@
   "nodeModulesDir": "manual",
   "tasks": {
     "dev": "vite",
+    "dev:mock": "JIKO_MOCK=1 vite",
     "build": "vite build",
     "start": "deno serve -A _fresh/server.js",
     "import-data": "deno run -A scripts/import-csv.ts"
